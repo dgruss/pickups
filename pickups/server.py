@@ -129,6 +129,7 @@ class Server:
             elif line.startswith('WHO'):
                 query = line.split(' ')[1]
                 if query.startswith('#'):
+                    channel = line.split(' ')[1]
                     conv = util.channel_to_conversation(channel,
                                                          self._conv_list)
                     if not conv:
