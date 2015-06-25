@@ -124,7 +124,7 @@ class Server:
                         client.topic(channel, util.get_topic(conv))
                         client.list_nicks(channel, (util.get_nick(user)
                                                     for user in conv.users))
-                    client.joined_channels.add(channel)
+                        client.joined_channels.add(channel)
             elif line.startswith('PART'):
                 channel_line = line.split(' ')[1]
                 channels = channel_line.split(',')
