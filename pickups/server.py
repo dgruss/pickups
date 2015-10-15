@@ -57,7 +57,7 @@ class Server:
 
     def _on_client_connect(self, client_reader, client_writer):
         """Called when an IRC client connects."""
-        client = irc.Client(client_reader, client_writer)
+        client = irc.Client(self, client_reader, client_writer)
         task = asyncio.Task(self._handle_client(client))
         self.clients[task] = client
         logger.info("New Connection")
@@ -102,25 +102,37 @@ class Server:
                 segments = hangups.ChatMessageSegment.from_str(message[1:])
                 asyncio.async(conv.send_message(segments))
             elif line.startswith('JOIN'):
-                channel = line.split(' ')[1]
-                conv = util.channel_to_conversation(channel, self._conv_list)
-                if not conv:
-                    client.swrite(irc.ERR_NOSUCHCHANNEL,
-                            ':{}: Channel not found'.format(channel))
-                else:
-                    # If a JOIN is successful, the user receives a JOIN message
-                    # as confirmation and is then sent the channel's topic
-                    # (using RPL_TOPIC) and the list of users who are on the
-                    # channel (using RPL_NAMREPLY), which MUST include the user
-                    # joining.
+                channel_line = line.split(' ')[1]
+                channels = channel_line.split(',')
+                for channel in channels:
+                    conv = util.channel_to_conversation(channel, self._conv_list)
+                    if not conv:
+                        client.swrite(irc.ERR_NOSUCHCHANNEL,
+                                ':{}: Channel not found'.format(channel))
+                    else:
+                        # If a JOIN is successful, the user receives a JOIN message
+                        # as confirmation and is then sent the channel's topic
+                        # (using RPL_TOPIC) and the list of users who are on the
+                        # channel (using RPL_NAMREPLY), which MUST include the user
+                        # joining.
+                        client.write(util.get_nick(self._user_list._self_user),
+                                     'JOIN', channel)
+                        client.topic(channel, util.get_topic(conv))
+                        client.list_nicks(channel, (util.get_nick(user)
+                                                    for user in conv.users))
+                        client.joined_channels.add(channel)
+            elif line.startswith('PART'):
+                channel_line = line.split(' ')[1]
+                channels = channel_line.split(',')
+                for channel in channels:
+                    if channel in client.joined_channels:
+                        client.joined_channels.remove(channel)
                     client.write(util.get_nick(self._user_list._self_user),
-                                 'JOIN', channel)
-                    client.topic(channel, util.get_topic(conv))
-                    client.list_nicks(channel, (util.get_nick(user)
-                                                for user in conv.users))
+                                 'PART', channel)
             elif line.startswith('WHO'):
                 query = line.split(' ')[1]
                 if query.startswith('#'):
+                    channel = line.split(' ')[1]
                     conv = util.channel_to_conversation(channel,
                                                          self._conv_list)
                     if not conv:
