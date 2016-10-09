@@ -56,7 +56,7 @@ class Client(object):
 
     def welcome(self):
         """Tells the client a welcome message."""
-        self.swrite(RPL_WELCOME, self.nickname, ':Welcome to pickups!')
+        self.swrite(RPL_WELCOME, self.nickname)
 
     def list_channels(self, info):
         """Tells the client what channels are available."""
@@ -106,6 +106,3 @@ class Client(object):
         self.uwrite('NICK', nickname)
         self.nickname = nickname
 
-    def pong(self):
-        """Replies to server pings."""
-        self.swrite('PONG', 'localhost')

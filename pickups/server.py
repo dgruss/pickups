@@ -57,11 +57,12 @@ class Server:
 
     def _on_client_connect(self, client_reader, client_writer):
         """Called when an IRC client connects."""
-        client = irc.Client(self, client_reader, client_writer)
-        task = asyncio.Task(self._handle_client(client))
-        self.clients[task] = client
-        logger.info("New Connection")
-        task.add_done_callback(self._on_client_lost)
+        if len(self.clients) == 0:
+            client = irc.Client(self, client_reader, client_writer)
+            task = asyncio.Task(self._handle_client(client))
+            self.clients[task] = client
+            logger.info("New Connection")
+            task.add_done_callback(self._on_client_lost)
 
     def _on_client_lost(self, task):
         """Called when an IRC client disconnects."""
@@ -76,7 +77,7 @@ class Server:
 
         while True:
             line = yield from client.readline()
-            line = line.decode('utf-8').strip('\r\n')
+            line = line.decode('utf-8', 'ignore').strip('\r\n')
 
             if not line:
                 logger.info("Connection lost")
@@ -98,8 +99,10 @@ class Server:
             elif line.startswith('PRIVMSG'):
                 channel, message = line.split(' ', 2)[1:]
                 conv = util.channel_to_conversation(channel, self._conv_list)
-                client.sent_messages.append(message[1:])
-                segments = hangups.ChatMessageSegment.from_str(message[1:])
+                if message.startswith(':'):
+                    message = message[1:]
+                client.sent_messages.append(message[0:])
+                segments = hangups.ChatMessageSegment.from_str(message[0:])
                 asyncio.async(conv.send_message(segments))
             elif line.startswith('JOIN'):
                 channel_line = line.split(' ')[1]
@@ -147,7 +150,8 @@ class Server:
                         } for user in conv.users]
                         client.who(query, responses)
             elif line.startswith('PING'):
-                client.pong()
+                query = line.split(' ')[1]
+                client.swrite('PONG',query)
 
             if not welcomed and client.nickname and username:
                 welcomed = True

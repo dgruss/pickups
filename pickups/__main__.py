@@ -10,7 +10,7 @@ from .server import Server
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    logging.getLogger('hangups').setLevel(logging.WARNING)
+#    logging.getLogger('hangups').setLevel(logging.WARNING)
     dirs = appdirs.AppDirs('hangups', 'hangups')
 
     parser = argparse.ArgumentParser(description='IRC Gateway for Hangouts')
