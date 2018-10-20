@@ -100,7 +100,18 @@ class Server:
                 conv = util.channel_to_conversation(channel, self._conv_list)
                 client.sent_messages.append(message[1:])
                 segments = hangups.ChatMessageSegment.from_str(message[1:])
-                asyncio.async(conv.send_message(segments))
+
+                # Ensure legacy compatability and python 3.7+ compatability
+                ensure_future = getattr(
+                    asyncio,
+                    'async',
+                    getattr(asyncio, "ensure_future", None)
+                )
+
+                if not ensure_future:
+                    raise AttributeError
+
+                ensure_future(conv.send_message(segments))
             elif line.startswith('JOIN'):
                 channel_line = line.split(' ')[1]
                 channels = channel_line.split(',')
