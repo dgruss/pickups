@@ -103,7 +103,6 @@ class Server:
                     message = message[1:]
                 client.sent_messages.append(message[0:])
                 segments = hangups.ChatMessageSegment.from_str(message[0:])
-                asyncio.async(conv.send_message(segments))
                 # Ensure legacy compatability and python 3.7+ compatability
                 ensure_future = getattr(
                     asyncio,
